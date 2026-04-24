@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Eventos Navio Negreiro</title>
+    <link rel="stylesheet" href="../CSS/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .admin-container { max-width: 800px; margin: 4rem auto; padding: 2rem; background: var(--background-color); border-radius: var(--border-radius); box-shadow: var(--shadow); }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .admin-form { display: grid; gap: 1rem; margin-bottom: 3rem; padding: 1.5rem; background: #f8f9fa; border-radius: 8px; border: 1px solid var(--border-color); }
+        [data-theme="dark"] .admin-form { background: #2a2a2a; }
+        .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .form-group input, .form-group textarea { padding: 0.8rem; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-color); color: var(--text-color); font-family: inherit; }
+        .event-list-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border-color); }
+        .event-list-item:last-child { border-bottom: none; }
+        .event-info h4 { font-family: 'Oswald', sans-serif; margin-bottom: 0.2rem; }
+        .btn-danger { background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; transition: 0.3s; }
+        .btn-danger:hover { background: #c0392b; }
+        #login-screen { max-width: 400px; margin: 10rem auto; text-align: center; }
+    </style>
+</head>
+<body>
+    <button id="theme-toggle" class="theme-toggle" aria-label="Alternar tema">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <!-- Tela de Login Simulada -->
+    <div id="login-screen" class="container">
+        <h2 style="font-family: 'Oswald', sans-serif; margin-bottom: 1rem;">Acesso Restrito</h2>
+        <p style="margin-bottom: 2rem; color: var(--text-light);">Insira a senha de acesso para gerenciar os eventos.</p>
+        <div class="form-group" style="margin-bottom: 1rem;">
+            <input type="password" id="admin-password" placeholder="Senha" style="text-align: center;">
+        </div>
+        <button id="btn-login" class="btn btn-primary" style="width: 100%;">Acessar</button>
+        <p id="login-error" style="color: #e74c3c; margin-top: 1rem; display: none;">Senha incorreta.</p>
+        <div style="margin-top: 2rem;">
+            <a href="eventos.html" style="color: var(--primary-color);">Voltar para Eventos</a>
+        </div>
+    </div>
+
+    <!-- Painel de Admin (Oculto inicialmente) -->
+    <div id="admin-panel" class="container" style="display: none;">
+        <div class="admin-container">
+            <div class="admin-header">
+                <h2 style="font-family: 'Oswald', sans-serif;">Gerenciar Eventos</h2>
+                <div>
+                    <a href="eventos.html" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Ver Página</a>
+                    <button id="btn-logout" class="btn btn-danger" style="margin-left: 0.5rem;"><i class="fas fa-sign-out-alt"></i> Sair</button>
+                </div>
+            </div>
+
+            <div class="admin-form">
+                <h3 style="font-family: 'Oswald', sans-serif; margin-bottom: 1rem; border-bottom: 2px solid var(--primary-color); display: inline-block;">Adicionar Novo Evento</h3>
+                <form id="add-event-form">
+                    <div class="form-group">
+                        <label for="event-title">Título do Evento *</label>
+                        <input type="text" id="event-title" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="event-day">Dia (Ex: 23, Último domingo) *</label>
+                            <input type="text" id="event-day" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="event-month">Mês (Ex: AGO)</label>
+                            <input type="text" id="event-month">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="event-desc">Descrição</label>
+                        <textarea id="event-desc" rows="3"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="event-time">Horário *</label>
+                            <input type="text" id="event-time" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="event-location">Local *</label>
+                            <input type="text" id="event-location" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="event-tags">Tags (separadas por vírgula)</label>
+                        <input type="text" id="event-tags" placeholder="Ex: Roda, Gratuito">
+                    </div>
+                    <div class="form-group" style="flex-direction: row; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+                        <input type="checkbox" id="event-featured" style="width: auto;"> 
+                        <label for="event-featured" style="margin: 0; cursor: pointer;">Destacar este evento</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="margin-top: 1rem;"><i class="fas fa-save"></i> Salvar Evento</button>
+                </form>
+            </div>
+
+            <div>
+                <h3 style="font-family: 'Oswald', sans-serif; margin-bottom: 1rem; border-bottom: 2px solid var(--primary-color); display: inline-block;">Eventos Atuais</h3>
+                <div id="admin-events-list" style="border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;">
+                    <!-- Lista renderizada pelo JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../JS/script.js"></script>
+    <script src="../JS/eventos.js"></script>
+</body>
+</html>
