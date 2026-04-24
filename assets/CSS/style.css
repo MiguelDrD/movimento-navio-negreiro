@@ -52,8 +52,8 @@ body {
 
 .theme-toggle {
     position: fixed;
-    top: 20px;
-    right: 20px;
+    bottom: 20px;
+    left: 20px;
     z-index: 1000;
     background: var(--primary-color);
     color: var(--secondary-color);
@@ -530,15 +530,25 @@ body {
     .mobile-menu-toggle {
         display: flex;
     }
+
+    .logo-text h1 {
+        font-size: 1.2rem;
+    }
+
+    .logo-img {
+        width: 50px;
+        height: 50px;
+    }
     
     .nav {
         display: none;
-        position: absolute;
-        top: 100%;
+        position: fixed;
+        top: 82px;
         left: 0;
         width: 100%;
         background: var(--secondary-color);
         box-shadow: var(--shadow);
+        z-index: 99;
     }
     
     .nav.active {
@@ -591,6 +601,23 @@ body {
         padding: 0 15px;
     }
     
+    .logo {
+        gap: 0.5rem;
+    }
+
+    .logo-text h1 {
+        font-size: 1rem;
+    }
+
+    .logo-img {
+        width: 40px;
+        height: 40px;
+    }
+
+    .nav {
+        top: 72px;
+    }
+
     .hero-title {
         font-size: 2rem;
     }
