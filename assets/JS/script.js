@@ -212,7 +212,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // ===== VALIDAÇÃO DE FORMULÁRIOS =====
-    const forms = document.querySelectorAll('form');
+    const forms = document.querySelectorAll('form:not(#add-event-form)');
     
     forms.forEach(form => {
         form.addEventListener('submit', function(e) {
