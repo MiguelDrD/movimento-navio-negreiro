@@ -450,6 +450,10 @@ body {
     object-fit: contain;
 }
 
+.footer-section {
+    text-align: left;
+}
+
 .footer-section h3,
 .footer-section h4 {
     font-family: 'Oswald', sans-serif;
