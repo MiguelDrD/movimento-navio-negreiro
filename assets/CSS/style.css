@@ -2793,6 +2793,10 @@ img.lazy.loaded {
         height: 400px;
     }
     
+    .instructor-card-img {
+        height: 350px;
+    }
+    
     .instructor-name {
         font-size: 2.5rem;
     }
