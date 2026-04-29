@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Instrutores Navio Negreiro</title>
+    <link rel="stylesheet" href="../CSS/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .instructor-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .instructor-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .instructor-list-item.main-instructor {
+            background: var(--accent-color);
+            opacity: 0.2;
+        }
+
+        .instructor-preview {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .instructor-preview img {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .instructor-info {
+            flex: 1;
+        }
+
+        .instructor-info h4 {
+            margin: 0;
+            font-family: 'Oswald', sans-serif;
+        }
+
+        .instructor-info p {
+            margin: 0.25rem 0;
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .instructor-cord-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .cord-color {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 1px solid #999;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s ease;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .instructor-list-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .instructor-preview {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button id="theme-toggle" class="theme-toggle" aria-label="Alternar tema">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <!-- Tela de Login Simulada -->
+    <div id="login-screen" class="container">
+        <h2 style="font-family: 'Oswald', sans-serif; margin-bottom: 1rem;">Acesso Restrito</h2>
+        <p style="margin-bottom: 2rem; color: var(--text-light);">Insira a senha de acesso para gerenciar os instrutores.</p>
+        <div class="form-group" style="margin-bottom: 1rem;">
+            <input type="password" id="admin-password" placeholder="Senha" style="text-align: center;">
+        </div>
+        <button id="btn-login" class="btn btn-primary" style="width: 100%;">Acessar</button>
+        <p id="login-error" style="color: #e74c3c; margin-top: 1rem; display: none;">Senha incorreta.</p>
+        <div style="margin-top: 2rem;">
+            <a href="instrutores.html" style="color: var(--primary-color);">Voltar para Instrutores</a>
+        </div>
+    </div>
+
+    <!-- Painel de Admin (Oculto inicialmente) -->
+    <div id="admin-panel" class="container" style="display: none;">
+        <div class="admin-container">
+            <div class="admin-header">
+                <h2 style="font-family: 'Oswald', sans-serif;">Gerenciar Instrutores</h2>
+                <div>
+                    <a href="instrutores.html" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Ver Página</a>
+                    <button id="btn-logout" class="btn btn-danger" style="margin-left: 0.5rem;"><i class="fas fa-sign-out-alt"></i> Sair</button>
+                </div>
+            </div>
+
+            <div class="admin-form">
+                <h3 style="font-family: 'Oswald', sans-serif; margin-bottom: 1rem; border-bottom: 2px solid var(--primary-color); display: inline-block;">Adicionar Novo Instrutor</h3>
+                <form id="add-instructor-form">
+                    <!-- Nome e Título -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="instructor-name">Nome do Instrutor *</label>
+                            <input type="text" id="instructor-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="instructor-title">Título (Ex: Mestre, Professor, Instrutor) *</label>
+                            <input type="text" id="instructor-title" required>
+                        </div>
+                    </div>
+
+                    <!-- Papel e Corda -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="instructor-role">Papel do Instrutor (Ex: Escola Municipal, Centro Comunitário) *</label>
+                            <input type="text" id="instructor-role" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="instructor-cord">Cor da Corda *</label>
+                            <select id="instructor-cord" required>
+                                <option value="">Selecione uma cor...</option>
+                                <option value="#FFFFFF|Branca">Branca - Iniciante</option>
+                                <option value="#FFFF00|Amarela">Amarela - Batizado</option>
+                                <option value="linear-gradient(45deg, #FFFF00 50%, #FFA500 50%)|Amarelo/Laranja">Amarelo/Laranja</option>
+                                <option value="#FFA500|Laranja">Laranja - Graduado</option>
+                                <option value="linear-gradient(45deg, #0000FF 50%, #FFA500 50%)|Azul/Laranja">Azul/Laranja - Aluno Graduado</option>
+                                <option value="#0000FF|Azul">Azul - Instrutor</option>
+                                <option value="linear-gradient(45deg, #0000FF 50%, #008000 50%)|Azul/Verde">Azul/Verde - Aluno Formado</option>
+                                <option value="#008000|Verde">Verde - Monitor</option>
+                                <option value="linear-gradient(45deg, #008000 50%, #800080 50%)|Verde/Roxa">Verde/Roxa</option>
+                                <option value="#800080|Roxa">Roxa - Professor</option>
+                                <option value="linear-gradient(45deg, #800080 50%, #8B4513 50%)|Roxo/Marrom">Roxo/Marrom</option>
+                                <option value="#8B4513|Marrom">Marrom - Contra-Mestre</option>
+                                <option value="linear-gradient(45deg, #8B4513 50%, #FF0000 50%)|Marrom/Vermelha">Marrom/Vermelha</option>
+                                <option value="#FF0000|Vermelha">Vermelha - Mestre</option>
+                                <option value="#FFF|Branca com Vermelha">Branca com Vermelha - Mestre</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Cor da Corda Customizada -->
+                    <div class="form-group">
+                        <label for="instructor-cord-color-name">Nome personalizado da cor (opcional - deixe em branco para usar o padrão)</label>
+                        <input type="text" id="instructor-cord-color-name" placeholder="Ex: Corda Vermelha">
+                    </div>
+
+                    <!-- Imagem -->
+                    <div class="form-group">
+                        <label for="instructor-image">URL da Imagem *</label>
+                        <input type="text" id="instructor-image" placeholder="Ex: ../img/foto.jpg" required>
+                    </div>
+
+                    <!-- Redes Sociais -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="instructor-instagram">Link Instagram (opcional)</label>
+                            <input type="url" id="instructor-instagram" placeholder="https://instagram.com/...">
+                        </div>
+                        <div class="form-group">
+                            <label for="instructor-facebook">Link Facebook (opcional)</label>
+                            <input type="url" id="instructor-facebook" placeholder="https://facebook.com/...">
+                        </div>
+                    </div>
+
+                    <!-- Descrição -->
+                    <div class="form-group">
+                        <label for="instructor-description">Descrição *</label>
+                        <textarea id="instructor-description" rows="4" required placeholder="Descreva as principais características e experiências do instrutor"></textarea>
+                    </div>
+
+                    <!-- Tags de Especialidade -->
+                    <div class="form-group">
+                        <label for="instructor-specialties">Tags de Especialidade (separadas por vírgula)</label>
+                        <input type="text" id="instructor-specialties" placeholder="Ex: Educação, Cultura, Liderança">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="margin-top: 1rem;"><i class="fas fa-save"></i> Salvar Instrutor</button>
+                </form>
+            </div>
+
+            <div>
+                <h3 style="font-family: 'Oswald', sans-serif; margin-bottom: 1rem; border-bottom: 2px solid var(--primary-color); display: inline-block;">Instrutores Atuais</h3>
+                <div id="admin-instructors-list" style="border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;">
+                    <!-- Lista renderizada pelo JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../JS/script.js"></script>
+    <script src="../JS/instrutores.js"></script>
+</body>
+</html>
