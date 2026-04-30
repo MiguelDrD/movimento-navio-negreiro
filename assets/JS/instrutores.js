@@ -49,17 +49,55 @@ document.addEventListener('DOMContentLoaded', () => {
     function getInstructors() {
         const stored = localStorage.getItem('navio_negreiro_instructors');
         if (stored) {
-            return JSON.parse(stored);
-        } else {
-            // Salva os padrões na primeira vez
-            localStorage.setItem('navio_negreiro_instructors', JSON.stringify(defaultInstructors));
-            return defaultInstructors;
+            try {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed)) {
+                    const cleaned = cleanStoredInstructors(parsed);
+                    if (cleaned.length !== parsed.length) {
+                        saveInstructors(cleaned);
+                    }
+                    return cleaned;
+                }
+            } catch (error) {
+                console.warn('Erro ao ler instrutores do localStorage:', error);
+            }
         }
+
+        // Salva os padrões na primeira vez ou quando houver problema no storage
+        localStorage.setItem('navio_negreiro_instructors', JSON.stringify(defaultInstructors));
+        return defaultInstructors;
     }
 
     // Salvar instrutores no LocalStorage
     function saveInstructors(instructors) {
         localStorage.setItem('navio_negreiro_instructors', JSON.stringify(instructors));
+    }
+
+    function isValidUrl(value) {
+        if (!value || typeof value !== 'string') return false;
+        const trimmed = value.trim();
+        if (/^(\.\.\/|\.\/|\/)/.test(trimmed)) return true;
+        try {
+            const parsed = new URL(trimmed);
+            return ['http:', 'https:'].includes(parsed.protocol);
+        } catch {
+            return false;
+        }
+    }
+
+    function normalizeUrl(value) {
+        if (!value || typeof value !== 'string') return '';
+        const trimmed = value.trim();
+        if (/^www\./i.test(trimmed)) {
+            return `https://${trimmed}`;
+        }
+        return trimmed;
+    }
+
+    function cleanStoredInstructors(instructors) {
+        return instructors.filter(instr => {
+            return instr && instr.name && instr.title && instr.role && instr.description && instr.image && isValidUrl(instr.image);
+        });
     }
 
     const currentPage = window.location.pathname;
@@ -192,12 +230,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 const nameValue = document.getElementById('instructor-name').value.trim();
                 const titleValue = document.getElementById('instructor-title').value.trim();
                 const roleValue = document.getElementById('instructor-role').value.trim();
-                const imageValue = document.getElementById('instructor-image').value.trim();
-                const instagramValue = document.getElementById('instructor-instagram').value.trim() || '#';
-                const facebookValue = document.getElementById('instructor-facebook').value.trim() || '#';
+                const imageValueRaw = document.getElementById('instructor-image').value.trim();
+                const instagramRaw = document.getElementById('instructor-instagram').value.trim();
+                const facebookRaw = document.getElementById('instructor-facebook').value.trim();
                 const descriptionValue = document.getElementById('instructor-description').value.trim();
                 const specialtiesValue = document.getElementById('instructor-specialties').value.split(',').map(s => s.trim()).filter(s => s !== '');
                 
+                const imageValue = normalizeUrl(imageValueRaw);
+                const instagramValue = instagramRaw ? normalizeUrl(instagramRaw) : '#';
+                const facebookValue = facebookRaw ? normalizeUrl(facebookRaw) : '#';
+                
+                if (!nameValue || !titleValue || !roleValue || !imageValue || !descriptionValue) {
+                    alert('Preencha todos os campos obrigatórios antes de salvar o instrutor.');
+                    return;
+                }
+
+                if (!isValidUrl(imageValue)) {
+                    alert('A URL da imagem não é válida. Use um caminho relativo ou um endereço completo começando com http:// ou https://.');
+                    return;
+                }
+
+                if (instagramRaw && !isValidUrl(instagramValue)) {
+                    alert('A URL do Instagram não é válida. Use um endereço completo começando com http:// ou https://.');
+                    return;
+                }
+
+                if (facebookRaw && !isValidUrl(facebookValue)) {
+                    alert('A URL do Facebook não é válida. Use um endereço completo começando com http:// ou https://.');
+                    return;
+                }
+
                 const cordSelect = document.getElementById('instructor-cord');
                 const cordValue = cordSelect.value;
                 
