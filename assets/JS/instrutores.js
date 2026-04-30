@@ -282,6 +282,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                     <div class="instructor-actions">
+                        <button class="btn btn-secondary btn-move-up" data-id="${instr.id}" title="Mover para cima"><i class="fas fa-arrow-up"></i></button>
+                        <button class="btn btn-secondary btn-move-down" data-id="${instr.id}" title="Mover para baixo"><i class="fas fa-arrow-down"></i></button>
                         <button class="btn btn-secondary btn-edit" data-id="${instr.id}" title="Editar instrutor"><i class="fas fa-edit"></i> Editar</button>
                         <button class="btn-danger btn-remove" data-id="${instr.id}" title="Remover instrutor"><i class="fas fa-trash"></i> Remover</button>
                     </div>
@@ -290,6 +292,20 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Adicionar eventos de click aos botões
+            document.querySelectorAll('.btn-move-up').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    moveInstructor(id, 'up');
+                });
+            });
+
+            document.querySelectorAll('.btn-move-down').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    moveInstructor(id, 'down');
+                });
+            });
+
             document.querySelectorAll('.btn-edit').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const id = this.getAttribute('data-id');
@@ -339,6 +355,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Scroll para o formulário
             document.querySelector('.admin-form').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function moveInstructor(id, direction) {
+            const instructors = getInstructors();
+            const index = instructors.findIndex(i => i.id === id);
+            if (index === -1) return;
+
+            const targetIndex = direction === 'up' ? index - 1 : index + 1;
+            if (targetIndex < 0 || targetIndex >= instructors.length) return;
+
+            [instructors[index], instructors[targetIndex]] = [instructors[targetIndex], instructors[index]];
+            saveInstructors(instructors);
+            renderAdminInstructors();
         }
 
         function removeInstructor(id) {
