@@ -116,15 +116,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function createInstructor(instructorData) {
         if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(instructorData)
-            });
-            if (!response.ok) {
-                throw new Error('Falha ao criar instrutor no servidor');
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(instructorData)
+                });
+                if (!response.ok) {
+                    throw new Error('Falha ao criar instrutor no servidor');
+                }
+                return await response.json();
+            } catch (error) {
+                console.warn('API inacessível, salvando instrutor no localStorage:', error);
             }
-            return await response.json();
         }
 
         const instructors = getLocalInstructors();
@@ -136,15 +140,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function updateInstructor(id, instructorData) {
         if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
-            const response = await fetch(`${API_URL}/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(instructorData)
-            });
-            if (!response.ok) {
-                throw new Error('Falha ao atualizar instrutor no servidor');
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(instructorData)
+                });
+                if (!response.ok) {
+                    throw new Error('Falha ao atualizar instrutor no servidor');
+                }
+                return await response.json();
+            } catch (error) {
+                console.warn('API inacessível, atualizando instrutor no localStorage:', error);
             }
-            return await response.json();
         }
 
         const instructors = getLocalInstructors();
@@ -159,13 +167,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function deleteInstructor(id) {
         if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
-            const response = await fetch(`${API_URL}/${id}`, {
-                method: 'DELETE'
-            });
-            if (!response.ok && response.status !== 204) {
-                throw new Error('Falha ao remover instrutor no servidor');
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok && response.status !== 204) {
+                    throw new Error('Falha ao remover instrutor no servidor');
+                }
+                return;
+            } catch (error) {
+                console.warn('API inacessível, removendo instrutor no localStorage:', error);
             }
-            return;
         }
 
         let instructors = getLocalInstructors();
