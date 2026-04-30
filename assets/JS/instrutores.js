@@ -160,7 +160,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Formulário de Adicionar/Editar
         const addForm = document.getElementById('add-instructor-form');
         const formTitle = document.querySelector('.admin-form h3');
-        const submitBtn = addForm.querySelector('button[type="submit"]');
+        const saveButton = document.getElementById('save-instructor-btn');
+        const submitBtn = addForm.querySelector('button[type="submit"]') || saveButton;
         const cancelBtn = document.createElement('button');
         cancelBtn.type = 'button';
         cancelBtn.className = 'btn btn-secondary';
@@ -168,7 +169,9 @@ document.addEventListener('DOMContentLoaded', () => {
         cancelBtn.style.display = 'none';
         cancelBtn.style.marginTop = '1rem';
         cancelBtn.style.marginLeft = '0.5rem';
-        submitBtn.parentNode.appendChild(cancelBtn);
+        if (submitBtn && submitBtn.parentNode) {
+            submitBtn.parentNode.appendChild(cancelBtn);
+        }
 
         cancelBtn.addEventListener('click', () => {
             resetForm();
@@ -182,62 +185,74 @@ document.addEventListener('DOMContentLoaded', () => {
             cancelBtn.style.display = 'none';
         }
 
-        addForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            const cordSelect = document.getElementById('instructor-cord');
-            const cordValue = cordSelect.value;
-            
-            // Se não houver seleção, usar um padrão
-            let cordStyle = '#0000FF';
-            let cordDefaultName = 'Azul';
-            
-            if (cordValue && cordValue !== '') {
-                const cordParts = cordValue.split('|');
-                cordStyle = cordParts[0];
-                cordDefaultName = cordParts[1] || 'Corda';
-            }
-            
-            const cordCustomName = document.getElementById('instructor-cord-color-name').value.trim();
-
-            const instructorData = {
-                name: document.getElementById('instructor-name').value.trim(),
-                title: document.getElementById('instructor-title').value.trim(),
-                role: document.getElementById('instructor-role').value.trim(),
-                cordStyle: cordStyle,
-                cordName: cordCustomName || cordDefaultName,
-                image: document.getElementById('instructor-image').value.trim(),
-                instagram: document.getElementById('instructor-instagram').value.trim() || '#',
-                facebook: document.getElementById('instructor-facebook').value.trim() || '#',
-                description: document.getElementById('instructor-description').value.trim(),
-                specialties: document.getElementById('instructor-specialties').value.split(',').map(s => s.trim()).filter(s => s !== ''),
-                isMainInstructor: false
-            };
-
-            const instructors = getInstructors();
-
-            if (editingInstructorId) {
-                // Editar instrutor existente
-                const index = instructors.findIndex(i => i.id === editingInstructorId);
-                if (index !== -1) {
-                    instructors[index] = { ...instructors[index], ...instructorData };
-                    saveInstructors(instructors);
-                    alert('Instrutor atualizado com sucesso!');
+        // Usar event listener de click no botão em vez de submit no formulário
+        if (saveButton) {
+            saveButton.addEventListener('click', () => {
+                // Extrair valores ANTES de qualquer operação
+                const nameValue = document.getElementById('instructor-name').value.trim();
+                const titleValue = document.getElementById('instructor-title').value.trim();
+                const roleValue = document.getElementById('instructor-role').value.trim();
+                const imageValue = document.getElementById('instructor-image').value.trim();
+                const instagramValue = document.getElementById('instructor-instagram').value.trim() || '#';
+                const facebookValue = document.getElementById('instructor-facebook').value.trim() || '#';
+                const descriptionValue = document.getElementById('instructor-description').value.trim();
+                const specialtiesValue = document.getElementById('instructor-specialties').value.split(',').map(s => s.trim()).filter(s => s !== '');
+                
+                const cordSelect = document.getElementById('instructor-cord');
+                const cordValue = cordSelect.value;
+                
+                // Se não houver seleção, usar um padrão
+                let cordStyle = '#0000FF';
+                let cordDefaultName = 'Azul';
+                
+                if (cordValue && cordValue !== '') {
+                    const cordParts = cordValue.split('|');
+                    cordStyle = cordParts[0];
+                    cordDefaultName = cordParts[1] || 'Corda';
                 }
-            } else {
-                // Adicionar novo instrutor
-                const newInstructor = {
-                    id: 'instr-' + Date.now(),
-                    ...instructorData
+                
+                const cordCustomName = document.getElementById('instructor-cord-color-name').value.trim();
+
+                const instructorData = {
+                    name: nameValue,
+                    title: titleValue,
+                    role: roleValue,
+                    cordStyle: cordStyle,
+                    cordName: cordCustomName || cordDefaultName,
+                    image: imageValue,
+                    instagram: instagramValue,
+                    facebook: facebookValue,
+                    description: descriptionValue,
+                    specialties: specialtiesValue,
+                    isMainInstructor: false
                 };
-                instructors.push(newInstructor);
-                saveInstructors(instructors);
-                alert('Instrutor adicionado com sucesso!');
-            }
-            
-            resetForm();
-            renderAdminInstructors();
-        });
+
+                const instructors = getInstructors();
+
+                if (editingInstructorId) {
+                    // Editar instrutor existente
+                    const index = instructors.findIndex(i => i.id === editingInstructorId);
+                    if (index !== -1) {
+                        instructors[index] = { ...instructors[index], ...instructorData };
+                        saveInstructors(instructors);
+                        alert('Instrutor atualizado com sucesso!');
+                    }
+                } else {
+                    // Adicionar novo instrutor
+                    const newInstructor = {
+                        id: 'instr-' + Date.now(),
+                        ...instructorData
+                    };
+                    instructors.push(newInstructor);
+                    saveInstructors(instructors);
+                    alert('Instrutor adicionado com sucesso!');
+                }
+                
+                // Resetar formulário APÓS tudo ser processado
+                resetForm();
+                renderAdminInstructors();
+            });
+        }
 
         // Renderizar lista de administração
         function renderAdminInstructors() {
