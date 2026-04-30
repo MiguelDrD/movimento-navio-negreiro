@@ -45,8 +45,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     ];
 
-    // Carregar instrutores do LocalStorage ou usar os padrões
-    function getInstructors() {
+    const API_BASE = window.location.protocol === 'http:' || window.location.protocol === 'https:'
+        ? window.location.origin
+        : 'http://localhost:3000';
+    const API_URL = `${API_BASE}/api/instructors`;
+
+    // Carregar instrutores do servidor ou usar os locais como fallback
+    async function getInstructors() {
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            try {
+                return await fetchInstructorsFromApi();
+            } catch (error) {
+                console.warn('API inacessível, usando localStorage:', error);
+            }
+        }
+        return getLocalInstructors();
+    }
+
+    async function fetchInstructorsFromApi() {
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+            throw new Error('Falha ao carregar de API');
+        }
+        return await response.json();
+    }
+
+    function getLocalInstructors() {
         const stored = localStorage.getItem('navio_negreiro_instructors');
         if (stored) {
             try {
@@ -54,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (Array.isArray(parsed)) {
                     const cleaned = cleanStoredInstructors(parsed);
                     if (cleaned.length !== parsed.length) {
-                        saveInstructors(cleaned);
+                        saveLocalInstructors(cleaned);
                     }
                     return cleaned;
                 }
@@ -63,14 +87,90 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Salva os padrões na primeira vez ou quando houver problema no storage
-        localStorage.setItem('navio_negreiro_instructors', JSON.stringify(defaultInstructors));
+        saveLocalInstructors(defaultInstructors);
         return defaultInstructors;
     }
 
-    // Salvar instrutores no LocalStorage
-    function saveInstructors(instructors) {
+    function saveLocalInstructors(instructors) {
         localStorage.setItem('navio_negreiro_instructors', JSON.stringify(instructors));
+    }
+
+    async function saveInstructors(instructors) {
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(instructors)
+                });
+                if (!response.ok) {
+                    throw new Error('Falha ao salvar via API');
+                }
+                return await response.json();
+            } catch (error) {
+                console.warn('Falha ao salvar via API, usando localStorage:', error);
+            }
+        }
+        saveLocalInstructors(instructors);
+    }
+
+    async function createInstructor(instructorData) {
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(instructorData)
+            });
+            if (!response.ok) {
+                throw new Error('Falha ao criar instrutor no servidor');
+            }
+            return await response.json();
+        }
+
+        const instructors = getLocalInstructors();
+        const newInstructor = { id: `instr-${Date.now()}`, ...instructorData };
+        instructors.push(newInstructor);
+        saveLocalInstructors(instructors);
+        return newInstructor;
+    }
+
+    async function updateInstructor(id, instructorData) {
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            const response = await fetch(`${API_URL}/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(instructorData)
+            });
+            if (!response.ok) {
+                throw new Error('Falha ao atualizar instrutor no servidor');
+            }
+            return await response.json();
+        }
+
+        const instructors = getLocalInstructors();
+        const index = instructors.findIndex(i => i.id === id);
+        if (index !== -1) {
+            instructors[index] = { ...instructors[index], ...instructorData };
+            saveLocalInstructors(instructors);
+            return instructors[index];
+        }
+        throw new Error('Instrutor não encontrado para atualizar');
+    }
+
+    async function deleteInstructor(id) {
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            const response = await fetch(`${API_URL}/${id}`, {
+                method: 'DELETE'
+            });
+            if (!response.ok && response.status !== 204) {
+                throw new Error('Falha ao remover instrutor no servidor');
+            }
+            return;
+        }
+
+        let instructors = getLocalInstructors();
+        instructors = instructors.filter(i => i.id !== id);
+        saveLocalInstructors(instructors);
     }
 
     function isValidUrl(value) {
@@ -107,48 +207,49 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isAdminPage) {
         const instructorsGrid = document.querySelector('.instructors-grid');
         if (instructorsGrid) {
-            renderPublicInstructors();
+            renderPublicInstructors().catch(error => console.error('Erro ao renderizar instrutores públicos:', error));
         }
+    }
 
-        function renderPublicInstructors() {
-            const instructors = getInstructors();
-            if (!instructorsGrid) return;
+    async function renderPublicInstructors() {
+        const instructorsGrid = document.querySelector('.instructors-grid');
+        const instructors = await getInstructors();
+        if (!instructorsGrid) return;
+
+        instructorsGrid.innerHTML = '';
+
+        // Renderizar não-principais
+        instructors.filter(i => !i.isMainInstructor).forEach(instr => {
+            const card = document.createElement('div');
+            card.className = 'instructor-card';
             
-            instructorsGrid.innerHTML = '';
-
-            // Renderizar não-principais
-            instructors.filter(i => !i.isMainInstructor).forEach(instr => {
-                const card = document.createElement('div');
-                card.className = 'instructor-card';
-                
-                const specialtiesHtml = instr.specialties.filter(s => s.trim() !== '').map(spec => `<span class="specialty">${spec.trim()}</span>`).join('');
-                
-                card.innerHTML = `
-                    <div class="instructor-photo">
-                        <img src="${instr.image}" alt="${instr.name}" class="instructor-card-img">
-                        <div class="instructor-overlay">
-                            <div class="instructor-social">
-                                ${instr.instagram && instr.instagram !== '#' ? `<a href="${instr.instagram}" class="social-link" target="_blank"><i class="fab fa-instagram"></i></a>` : '<a href="#" class="social-link" style="opacity:0.3; pointer-events:none;"><i class="fab fa-instagram"></i></a>'}
-                                ${instr.facebook && instr.facebook !== '#' ? `<a href="${instr.facebook}" class="social-link" target="_blank"><i class="fab fa-facebook"></i></a>` : '<a href="#" class="social-link" style="opacity:0.3; pointer-events:none;"><i class="fab fa-facebook"></i></a>'}
-                            </div>
+            const specialtiesHtml = instr.specialties.filter(s => s.trim() !== '').map(spec => `<span class="specialty">${spec.trim()}</span>`).join('');
+            
+            card.innerHTML = `
+                <div class="instructor-photo">
+                    <img src="${instr.image}" alt="${instr.name}" class="instructor-card-img">
+                    <div class="instructor-overlay">
+                        <div class="instructor-social">
+                            ${instr.instagram && instr.instagram !== '#' ? `<a href="${instr.instagram}" class="social-link" target="_blank"><i class="fab fa-instagram"></i></a>` : '<a href="#" class="social-link" style="opacity:0.3; pointer-events:none;"><i class="fab fa-instagram"></i></a>'}
+                            ${instr.facebook && instr.facebook !== '#' ? `<a href="${instr.facebook}" class="social-link" target="_blank"><i class="fab fa-facebook"></i></a>` : '<a href="#" class="social-link" style="opacity:0.3; pointer-events:none;"><i class="fab fa-facebook"></i></a>'}
                         </div>
                     </div>
-                    <div class="instructor-details">
-                        <h3>${instr.name}</h3>
-                        <p class="instructor-role">${instr.role}</p>
-                        <div class="instructor-cord-small">
-                            <span class="cord-color" style="background: ${instr.cordStyle};"></span>
-                            <span>${instr.cordName}</span>
-                        </div>
-                        <p class="instructor-description">${instr.description}</p>
-                        <div class="instructor-specialties">
-                            ${specialtiesHtml}
-                        </div>
+                </div>
+                <div class="instructor-details">
+                    <h3>${instr.name}</h3>
+                    <p class="instructor-role">${instr.role}</p>
+                    <div class="instructor-cord-small">
+                        <span class="cord-color" style="background: ${instr.cordStyle};"></span>
+                        <span>${instr.cordName}</span>
                     </div>
-                `;
-                instructorsGrid.appendChild(card);
-            });
-        }
+                    <p class="instructor-description">${instr.description}</p>
+                    <div class="instructor-specialties">
+                        ${specialtiesHtml}
+                    </div>
+                </div>
+            `;
+            instructorsGrid.appendChild(card);
+        });
     }
 
     // === LÓGICA PARA admin-instrutores.html ===
@@ -166,13 +267,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Verifica se já está logado na sessão
         if (sessionStorage.getItem('admin_logged') === 'true') {
-            showAdminPanel();
+            showAdminPanel().catch(error => console.error('Erro ao exibir painel de administração:', error));
         }
 
-        btnLogin.addEventListener('click', () => {
+        btnLogin.addEventListener('click', async () => {
             if (passInput.value === ADMIN_PASS) {
                 sessionStorage.setItem('admin_logged', 'true');
-                showAdminPanel();
+                await showAdminPanel();
             } else {
                 loginError.style.display = 'block';
             }
@@ -186,10 +287,10 @@ document.addEventListener('DOMContentLoaded', () => {
             loginError.style.display = 'none';
         });
 
-        function showAdminPanel() {
+        async function showAdminPanel() {
             loginScreen.style.display = 'none';
             adminPanel.style.display = 'block';
-            renderAdminInstructors();
+            await renderAdminInstructors();
         }
 
         // Estado do formulário (adicionar ou editar)
@@ -225,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Usar event listener de click no botão em vez de submit no formulário
         if (saveButton) {
-            saveButton.addEventListener('click', () => {
+            saveButton.addEventListener('click', async () => {
                 // Extrair valores ANTES de qualquer operação
                 const nameValue = document.getElementById('instructor-name').value.trim();
                 const titleValue = document.getElementById('instructor-title').value.trim();
@@ -289,40 +390,32 @@ document.addEventListener('DOMContentLoaded', () => {
                     isMainInstructor: false
                 };
 
-                const instructors = getInstructors();
-
-                if (editingInstructorId) {
-                    // Editar instrutor existente
-                    const index = instructors.findIndex(i => i.id === editingInstructorId);
-                    if (index !== -1) {
-                        instructors[index] = { ...instructors[index], ...instructorData };
-                        saveInstructors(instructors);
+                try {
+                    if (editingInstructorId) {
+                        await updateInstructor(editingInstructorId, instructorData);
                         alert('Instrutor atualizado com sucesso!');
+                    } else {
+                        await createInstructor(instructorData);
+                        alert('Instrutor adicionado com sucesso!');
                     }
-                } else {
-                    // Adicionar novo instrutor
-                    const newInstructor = {
-                        id: 'instr-' + Date.now(),
-                        ...instructorData
-                    };
-                    instructors.push(newInstructor);
-                    saveInstructors(instructors);
-                    alert('Instrutor adicionado com sucesso!');
+                } catch (error) {
+                    console.error(error);
+                    alert('Ocorreu um erro ao salvar o instrutor. Tente novamente.');
                 }
-                
+
                 // Resetar formulário APÓS tudo ser processado
                 resetForm();
-                renderAdminInstructors();
+                await renderAdminInstructors();
             });
         }
 
         // Renderizar lista de administração
-        function renderAdminInstructors() {
+        async function renderAdminInstructors() {
             const listContainer = document.getElementById('admin-instructors-list');
-            const instructors = getInstructors();
+            const instructors = await getInstructors();
             listContainer.innerHTML = '';
 
-            if (instructors.length === 0) {
+            if (!instructors || instructors.length === 0) {
                 listContainer.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-light);">Nenhum instrutor encontrado.</div>';
                 return;
             }
@@ -355,28 +448,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Adicionar eventos de click aos botões
             document.querySelectorAll('.btn-move-up').forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', async function() {
                     const id = this.getAttribute('data-id');
-                    moveInstructor(id, 'up');
+                    await moveInstructor(id, 'up');
                 });
             });
 
             document.querySelectorAll('.btn-move-down').forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', async function() {
                     const id = this.getAttribute('data-id');
-                    moveInstructor(id, 'down');
+                    await moveInstructor(id, 'down');
                 });
             });
 
             document.querySelectorAll('.btn-edit').forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', async function() {
                     const id = this.getAttribute('data-id');
-                    editInstructor(id);
+                    await editInstructor(id);
                 });
             });
 
             document.querySelectorAll('.btn-remove').forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', async function() {
                     const id = this.getAttribute('data-id');
                     const instructor = instructors.find(i => i.id === id);
                     
@@ -386,14 +479,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     
                     if(confirm('Tem certeza que deseja remover este instrutor?')) {
-                        removeInstructor(id);
+                        await removeInstructor(id);
                     }
                 });
             });
         }
 
-        function editInstructor(id) {
-            const instructors = getInstructors();
+        async function editInstructor(id) {
+            const instructors = await getInstructors();
             const instructor = instructors.find(i => i.id === id);
             if (!instructor) return;
 
@@ -419,8 +512,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelector('.admin-form').scrollIntoView({ behavior: 'smooth' });
         }
 
-        function moveInstructor(id, direction) {
-            const instructors = getInstructors();
+        async function moveInstructor(id, direction) {
+            const instructors = await getInstructors();
             const index = instructors.findIndex(i => i.id === id);
             if (index === -1) return;
 
@@ -428,15 +521,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetIndex < 0 || targetIndex >= instructors.length) return;
 
             [instructors[index], instructors[targetIndex]] = [instructors[targetIndex], instructors[index]];
-            saveInstructors(instructors);
-            renderAdminInstructors();
+            await saveInstructors(instructors);
+            await renderAdminInstructors();
         }
 
-        function removeInstructor(id) {
-            let instructors = getInstructors();
+        async function removeInstructor(id) {
+            let instructors = await getInstructors();
             instructors = instructors.filter(i => i.id !== id);
-            saveInstructors(instructors);
-            renderAdminInstructors();
+            await saveInstructors(instructors);
+            await renderAdminInstructors();
         }
     }
 });
