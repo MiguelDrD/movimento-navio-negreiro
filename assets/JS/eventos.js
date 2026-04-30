@@ -152,13 +152,38 @@ document.addEventListener('DOMContentLoaded', () => {
             renderAdminEvents();
         }
 
-        // Formulário de Adicionar
+        // Estado do formulário (adicionar ou editar)
+        let editingEventId = null;
+
+        // Formulário de Adicionar/Editar
         const addForm = document.getElementById('add-event-form');
+        const formTitle = document.querySelector('.admin-form h3');
+        const submitBtn = addForm.querySelector('button[type="submit"]');
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'btn btn-secondary';
+        cancelBtn.innerHTML = '<i class="fas fa-times"></i> Cancelar';
+        cancelBtn.style.display = 'none';
+        cancelBtn.style.marginTop = '1rem';
+        cancelBtn.style.marginLeft = '0.5rem';
+        submitBtn.parentNode.appendChild(cancelBtn);
+
+        cancelBtn.addEventListener('click', () => {
+            resetForm();
+        });
+
+        function resetForm() {
+            editingEventId = null;
+            addForm.reset();
+            formTitle.textContent = 'Adicionar Novo Evento';
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Evento';
+            cancelBtn.style.display = 'none';
+        }
+
         addForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
-            const newEvent = {
-                id: 'evt-' + Date.now(),
+            const eventData = {
                 title: document.getElementById('event-title').value,
                 day: document.getElementById('event-day').value,
                 month: document.getElementById('event-month').value,
@@ -170,12 +195,28 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             const events = getEvents();
-            events.push(newEvent);
-            saveEvents(events);
+
+            if (editingEventId) {
+                // Editar evento existente
+                const index = events.findIndex(e => e.id === editingEventId);
+                if (index !== -1) {
+                    events[index] = { ...events[index], ...eventData };
+                    saveEvents(events);
+                    alert('Evento atualizado com sucesso!');
+                }
+            } else {
+                // Adicionar novo evento
+                const newEvent = {
+                    id: 'evt-' + Date.now(),
+                    ...eventData
+                };
+                events.push(newEvent);
+                saveEvents(events);
+                alert('Evento adicionado com sucesso!');
+            }
             
-            addForm.reset();
+            resetForm();
             renderAdminEvents();
-            alert('Evento adicionado com sucesso!');
         });
 
         // Renderizar lista de administração
@@ -203,12 +244,22 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${displayDay} ${evt.month} | ${evt.time} | ${evt.location}
                         </p>
                     </div>
-                    <button class="btn-danger btn-remove" data-id="${evt.id}" title="Remover evento"><i class="fas fa-trash"></i> Remover</button>
+                    <div class="event-actions">
+                        <button class="btn btn-secondary btn-edit" data-id="${evt.id}" title="Editar evento"><i class="fas fa-edit"></i> Editar</button>
+                        <button class="btn btn-danger btn-remove" data-id="${evt.id}" title="Remover evento"><i class="fas fa-trash"></i> Remover</button>
+                    </div>
                 `;
                 listContainer.appendChild(item);
             });
 
-            // Adicionar eventos de click aos botões de remover
+            // Adicionar eventos de click aos botões
+            document.querySelectorAll('.btn-edit').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    editEvent(id);
+                });
+            });
+
             document.querySelectorAll('.btn-remove').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const id = this.getAttribute('data-id');
@@ -217,6 +268,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             });
+        }
+
+        function editEvent(id) {
+            const events = getEvents();
+            const event = events.find(e => e.id === id);
+            if (!event) return;
+
+            // Preencher o formulário
+            document.getElementById('event-title').value = event.title;
+            document.getElementById('event-day').value = event.day;
+            document.getElementById('event-month').value = event.month;
+            document.getElementById('event-desc').value = event.desc;
+            document.getElementById('event-time').value = event.time;
+            document.getElementById('event-location').value = event.location;
+            document.getElementById('event-tags').value = event.tags.join(', ');
+            document.getElementById('event-featured').checked = event.featured;
+
+            // Alterar estado para edição
+            editingEventId = id;
+            formTitle.textContent = 'Editar Evento';
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Atualizar Evento';
+            cancelBtn.style.display = 'inline-block';
+
+            // Scroll para o formulário
+            document.querySelector('.admin-form').scrollIntoView({ behavior: 'smooth' });
         }
 
         function removeEvent(id) {

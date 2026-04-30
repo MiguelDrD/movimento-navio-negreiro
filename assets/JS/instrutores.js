@@ -154,8 +154,34 @@ document.addEventListener('DOMContentLoaded', () => {
             renderAdminInstructors();
         }
 
-        // Formulário de Adicionar
+        // Estado do formulário (adicionar ou editar)
+        let editingInstructorId = null;
+
+        // Formulário de Adicionar/Editar
         const addForm = document.getElementById('add-instructor-form');
+        const formTitle = document.querySelector('.admin-form h3');
+        const submitBtn = addForm.querySelector('button[type="submit"]');
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'btn btn-secondary';
+        cancelBtn.innerHTML = '<i class="fas fa-times"></i> Cancelar';
+        cancelBtn.style.display = 'none';
+        cancelBtn.style.marginTop = '1rem';
+        cancelBtn.style.marginLeft = '0.5rem';
+        submitBtn.parentNode.appendChild(cancelBtn);
+
+        cancelBtn.addEventListener('click', () => {
+            resetForm();
+        });
+
+        function resetForm() {
+            editingInstructorId = null;
+            addForm.reset();
+            formTitle.textContent = 'Adicionar Novo Instrutor';
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Instrutor';
+            cancelBtn.style.display = 'none';
+        }
+
         addForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
@@ -174,8 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const cordCustomName = document.getElementById('instructor-cord-color-name').value.trim();
 
-            const newInstructor = {
-                id: 'instr-' + Date.now(),
+            const instructorData = {
                 name: document.getElementById('instructor-name').value.trim(),
                 title: document.getElementById('instructor-title').value.trim(),
                 role: document.getElementById('instructor-role').value.trim(),
@@ -190,12 +215,28 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             const instructors = getInstructors();
-            instructors.push(newInstructor);
-            saveInstructors(instructors);
+
+            if (editingInstructorId) {
+                // Editar instrutor existente
+                const index = instructors.findIndex(i => i.id === editingInstructorId);
+                if (index !== -1) {
+                    instructors[index] = { ...instructors[index], ...instructorData };
+                    saveInstructors(instructors);
+                    alert('Instrutor atualizado com sucesso!');
+                }
+            } else {
+                // Adicionar novo instrutor
+                const newInstructor = {
+                    id: 'instr-' + Date.now(),
+                    ...instructorData
+                };
+                instructors.push(newInstructor);
+                saveInstructors(instructors);
+                alert('Instrutor adicionado com sucesso!');
+            }
             
-            addForm.reset();
+            resetForm();
             renderAdminInstructors();
-            alert('Instrutor adicionado com sucesso!');
         });
 
         // Renderizar lista de administração
@@ -225,12 +266,22 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
                     </div>
-                    <button class="btn-danger btn-remove" data-id="${instr.id}" title="Remover instrutor"><i class="fas fa-trash"></i> Remover</button>
+                    <div class="instructor-actions">
+                        <button class="btn btn-secondary btn-edit" data-id="${instr.id}" title="Editar instrutor"><i class="fas fa-edit"></i> Editar</button>
+                        <button class="btn-danger btn-remove" data-id="${instr.id}" title="Remover instrutor"><i class="fas fa-trash"></i> Remover</button>
+                    </div>
                 `;
                 listContainer.appendChild(item);
             });
 
-            // Adicionar eventos de click aos botões de remover
+            // Adicionar eventos de click aos botões
+            document.querySelectorAll('.btn-edit').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    editInstructor(id);
+                });
+            });
+
             document.querySelectorAll('.btn-remove').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const id = this.getAttribute('data-id');
@@ -246,6 +297,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             });
+        }
+
+        function editInstructor(id) {
+            const instructors = getInstructors();
+            const instructor = instructors.find(i => i.id === id);
+            if (!instructor) return;
+
+            // Preencher o formulário
+            document.getElementById('instructor-name').value = instructor.name;
+            document.getElementById('instructor-title').value = instructor.title;
+            document.getElementById('instructor-role').value = instructor.role;
+            document.getElementById('instructor-cord').value = `${instructor.cordStyle}|${instructor.cordName}`;
+            document.getElementById('instructor-cord-color-name').value = instructor.cordName;
+            document.getElementById('instructor-image').value = instructor.image;
+            document.getElementById('instructor-instagram').value = instructor.instagram !== '#' ? instructor.instagram : '';
+            document.getElementById('instructor-facebook').value = instructor.facebook !== '#' ? instructor.facebook : '';
+            document.getElementById('instructor-description').value = instructor.description;
+            document.getElementById('instructor-specialties').value = instructor.specialties.join(', ');
+
+            // Alterar estado para edição
+            editingInstructorId = id;
+            formTitle.textContent = 'Editar Instrutor';
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Atualizar Instrutor';
+            cancelBtn.style.display = 'inline-block';
+
+            // Scroll para o formulário
+            document.querySelector('.admin-form').scrollIntoView({ behavior: 'smooth' });
         }
 
         function removeInstructor(id) {
