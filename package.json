@@ -1,5 +1,8 @@
 {
   "name": "capoeira-site",
   "version": "1.0.0",
-  "description": "Backend para persistência compartilhada dos instrutores do site Navio Negreiro."
+  "description": "Backend para persistência compartilhada dos instrutores do site Navio Negreiro.",
+  "dependencies": {
+    "vercel": "^32.0.0"
+  }
 }
