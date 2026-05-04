@@ -1,12 +1,5 @@
 {
   "name": "capoeira-site",
   "version": "1.0.0",
-  "description": "Backend para persistência compartilhada dos instrutores do site Navio Negreiro.",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.18.2"
-  }
+  "description": "Backend para persistência compartilhada dos instrutores do site Navio Negreiro."
 }
