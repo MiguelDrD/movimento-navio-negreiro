@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function updateEvent(id, eventData) {
         if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
-            const response = await fetch(`${API_URL}?id=${id}`, {
+            const response = await fetch(`${API_URL}/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(eventData)
@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function deleteEvent(id) {
         if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
-            const response = await fetch(`${API_URL}?id=${id}`, {
+            const response = await fetch(`${API_URL}/${id}`, {
                 method: 'DELETE'
             });
             if (!response.ok) {

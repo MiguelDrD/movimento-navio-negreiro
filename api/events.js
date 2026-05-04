@@ -1,4 +1,6 @@
-const { kv } = require('@vercel/kv');
+// const { kv } = require('@vercel/kv');
+
+let eventsData = null;
 
 const defaultEvents = [
   {
@@ -48,16 +50,14 @@ const defaultEvents = [
 ];
 
 async function readEvents() {
-  let events = await kv.get('events');
-  if (!events) {
-    events = defaultEvents;
-    await kv.set('events', events);
+  if (!eventsData) {
+    eventsData = defaultEvents;
   }
-  return events;
+  return eventsData;
 }
 
 async function writeEvents(events) {
-  await kv.set('events', events);
+  eventsData = events;
 }
 
 async function handler(req, res) {

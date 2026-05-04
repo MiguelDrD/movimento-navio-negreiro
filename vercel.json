@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/events/:id",
+      "destination": "/api/events?id=:id"
+    },
+    {
+      "source": "/api/instructors/:id",
+      "destination": "/api/instructors?id=:id"
+    }
+  ]
+}

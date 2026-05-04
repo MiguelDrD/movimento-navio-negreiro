@@ -7,6 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const dataDir = path.join(__dirname, 'data');
 const dataFile = path.join(dataDir, 'instructors.json');
+const eventsFile = path.join(dataDir, 'events.json');
 
 app.use(cors());
 app.use(express.json());
@@ -75,6 +76,71 @@ async function writeInstructors(instructors) {
   await fs.writeFile(dataFile, JSON.stringify(instructors, null, 2), 'utf8');
 }
 
+async function ensureEventsFile() {
+  try {
+    await fs.access(eventsFile);
+  } catch {
+    const defaultEvents = [
+      {
+        id: 'evt-1',
+        title: 'Roda de Capoeira Mensal',
+        day: 'Último <br>domingo<br> do mês',
+        month: '',
+        desc: 'Nossa tradicional roda mensal realizada todo último domingo do mês. Venha celebrar a capoeira conosco!',
+        time: '9:00',
+        location: 'Feira permanente do Riacho Fundo II',
+        tags: ['Roda', 'Gratuito', 'Todas as idades'],
+        featured: true
+      },
+      {
+        id: 'evt-2',
+        title: 'Roda de Capoeira Mensal',
+        day: '',
+        month: '',
+        desc: 'Nossa tradicional roda mensal realizada todo último domingo do mês. Venha celebrar a capoeira conosco!',
+        time: '9:00',
+        location: 'Salão comunitário da Divinéia',
+        tags: ['Roda', 'Gratuito', 'Todas as idades'],
+        featured: true
+      },
+      {
+        id: 'evt-3',
+        title: 'Batizado',
+        day: '23',
+        month: 'AGO',
+        desc: '',
+        time: '7:00 - 18:00',
+        location: 'Canto do Buriti - PI',
+        tags: ['Batizado', 'Roda', 'Almoço'],
+        featured: false
+      },
+      {
+        id: 'evt-4',
+        title: 'Batizado',
+        day: '19',
+        month: 'OUT',
+        desc: '',
+        time: '9:00',
+        location: 'Riacho Fundo II - DF',
+        tags: ['Batizado', 'Roda', 'Almoço'],
+        featured: false
+      }
+    ];
+    await fs.mkdir(dataDir, { recursive: true });
+    await fs.writeFile(eventsFile, JSON.stringify(defaultEvents, null, 2), 'utf8');
+  }
+}
+
+async function readEvents() {
+  await ensureEventsFile();
+  const data = await fs.readFile(eventsFile, 'utf8');
+  return JSON.parse(data);
+}
+
+async function writeEvents(events) {
+  await fs.writeFile(eventsFile, JSON.stringify(events, null, 2), 'utf8');
+}
+
 app.get('/api/instructors', async (req, res) => {
   try {
     const instructors = await readInstructors();
@@ -131,6 +197,65 @@ app.delete('/api/instructors/:id', async (req, res) => {
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: 'Não foi possível remover o instrutor.' });
+  }
+});
+
+app.get('/api/events', async (req, res) => {
+  try {
+    const events = await readEvents();
+    res.json(events);
+  } catch (error) {
+    res.status(500).json({ error: 'Não foi possível ler os eventos.' });
+  }
+});
+
+app.post('/api/events', async (req, res) => {
+  try {
+    const events = await readEvents();
+    if (Array.isArray(req.body)) {
+      const sanitized = req.body.map(evt => ({
+        ...evt,
+        id: evt.id || `evt-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+      }));
+      await writeEvents(sanitized);
+      return res.status(200).json(sanitized);
+    }
+
+    const newEvent = { ...req.body, id: `evt-${Date.now()}` };
+    events.push(newEvent);
+    await writeEvents(events);
+    res.status(201).json(newEvent);
+  } catch (error) {
+    res.status(500).json({ error: 'Não foi possível salvar o evento.' });
+  }
+});
+
+app.put('/api/events/:id', async (req, res) => {
+  try {
+    const events = await readEvents();
+    const index = events.findIndex(e => e.id === req.params.id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Evento não encontrado.' });
+    }
+    events[index] = { ...events[index], ...req.body, id: events[index].id };
+    await writeEvents(events);
+    res.json(events[index]);
+  } catch (error) {
+    res.status(500).json({ error: 'Não foi possível atualizar o evento.' });
+  }
+});
+
+app.delete('/api/events/:id', async (req, res) => {
+  try {
+    const events = await readEvents();
+    const filtered = events.filter(e => e.id !== req.params.id);
+    if (filtered.length === events.length) {
+      return res.status(404).json({ error: 'Evento não encontrado.' });
+    }
+    await writeEvents(filtered);
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: 'Não foi possível remover o evento.' });
   }
 });
 
