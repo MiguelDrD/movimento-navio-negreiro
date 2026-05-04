@@ -404,6 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Renderizar lista de administração
         async function renderAdminInstructors() {
             const listContainer = document.getElementById('admin-instructors-list');
+            listContainer.innerHTML = ''; // Limpar lista anterior
         let instructors = [];
 
         try {
