@@ -10,7 +10,11 @@
     "instagram": "#",
     "facebook": "#",
     "description": "Mestre Fumaça é o iniciador do Projeto Social Navio Negreiro e dedica sua vida à preservação e difusão da cultura da capoeira. Com mais de 32 anos de experiência, ele começou sua jornada ainda criança e se tornou uma referência na área.",
-    "specialties": ["Cultura", "Liderança", "Tradição"],
+    "specialties": [
+      "Cultura",
+      "Liderança",
+      "Tradição"
+    ],
     "isMainInstructor": true
   },
   {
@@ -24,7 +28,10 @@
     "instagram": "#",
     "facebook": "#",
     "description": "Une educação e capoeira de forma única, desenvolvendo projetos educacionais inovadores.",
-    "specialties": ["Educação", "Cultura"],
+    "specialties": [
+      "Educação",
+      "Cultura"
+    ],
     "isMainInstructor": false
   },
   {
@@ -38,7 +45,10 @@
     "instagram": "#",
     "facebook": "#",
     "description": "Especialista em técnicas avançadas de capoeira.",
-    "specialties": ["Técnica", "Liderança"],
+    "specialties": [
+      "Técnica",
+      "Liderança"
+    ],
     "isMainInstructor": false
   }
 ]

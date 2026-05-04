@@ -53,11 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Carregar instrutores do servidor ou usar os locais como fallback
     async function getInstructors() {
         if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
-            try {
-                return await fetchInstructorsFromApi();
-            } catch (error) {
-                console.warn('API inacessível, usando localStorage:', error);
-            }
+            return await fetchInstructorsFromApi();
         }
         return getLocalInstructors();
     }
@@ -97,38 +93,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function saveInstructors(instructors) {
         if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(instructors)
-                });
-                if (!response.ok) {
-                    throw new Error('Falha ao salvar via API');
-                }
-                return await response.json();
-            } catch (error) {
-                console.warn('Falha ao salvar via API, usando localStorage:', error);
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(instructors)
+            });
+            if (!response.ok) {
+                throw new Error('Falha ao salvar via API');
             }
+            return await response.json();
         }
         saveLocalInstructors(instructors);
     }
 
     async function createInstructor(instructorData) {
         if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(instructorData)
-                });
-                if (!response.ok) {
-                    throw new Error('Falha ao criar instrutor no servidor');
-                }
-                return await response.json();
-            } catch (error) {
-                console.warn('API inacessível, salvando instrutor no localStorage:', error);
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(instructorData)
+            });
+            if (!response.ok) {
+                throw new Error('Falha ao criar instrutor no servidor');
             }
+            return await response.json();
         }
 
         const instructors = getLocalInstructors();
@@ -140,19 +128,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function updateInstructor(id, instructorData) {
         if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
-            try {
-                const response = await fetch(`${API_URL}/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(instructorData)
-                });
-                if (!response.ok) {
-                    throw new Error('Falha ao atualizar instrutor no servidor');
-                }
-                return await response.json();
-            } catch (error) {
-                console.warn('API inacessível, atualizando instrutor no localStorage:', error);
+            const response = await fetch(`${API_URL}/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(instructorData)
+            });
+            if (!response.ok) {
+                throw new Error('Falha ao atualizar instrutor no servidor');
             }
+            return await response.json();
         }
 
         const instructors = getLocalInstructors();
@@ -167,17 +151,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function deleteInstructor(id) {
         if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
-            try {
-                const response = await fetch(`${API_URL}/${id}`, {
-                    method: 'DELETE'
-                });
-                if (!response.ok && response.status !== 204) {
-                    throw new Error('Falha ao remover instrutor no servidor');
-                }
-                return;
-            } catch (error) {
-                console.warn('API inacessível, removendo instrutor no localStorage:', error);
+            const response = await fetch(`${API_URL}/${id}`, {
+                method: 'DELETE'
+            });
+            if (!response.ok && response.status !== 204) {
+                throw new Error('Falha ao remover o instrutor no servidor');
             }
+            return;
         }
 
         let instructors = getLocalInstructors();
@@ -424,8 +404,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Renderizar lista de administração
         async function renderAdminInstructors() {
             const listContainer = document.getElementById('admin-instructors-list');
-            const instructors = await getInstructors();
-            listContainer.innerHTML = '';
+        let instructors = [];
+
+        try {
+            instructors = await getInstructors();
+        } catch (error) {
+            console.error('Erro ao carregar instrutores do servidor:', error);
+            listContainer.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-light);">Não foi possível carregar os instrutores. Verifique a conexão com o servidor.</div>';
+            return;
+        }
+
 
             if (!instructors || instructors.length === 0) {
                 listContainer.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-light);">Nenhum instrutor encontrado.</div>';
