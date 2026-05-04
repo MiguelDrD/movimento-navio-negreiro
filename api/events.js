@@ -60,7 +60,7 @@ async function writeEvents(events) {
   await kv.set('events', events);
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -117,3 +117,5 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 }
+
+module.exports = handler;
