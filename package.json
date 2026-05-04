@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Backend para persistência compartilhada dos instrutores do site Navio Negreiro.",
   "dependencies": {
-    "vercel": "^32.0.0"
+    "vercel": "^32.0.0",
+    "@vercel/kv": "^3.0.0"
   }
 }
