@@ -47,21 +47,133 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     ];
 
-    // Carregar eventos do LocalStorage ou usar os padrões
-    function getEvents() {
-        const stored = localStorage.getItem('navio_negreiro_events');
-        if (stored) {
-            return JSON.parse(stored);
-        } else {
-            // Salva os padrões na primeira vez
-            localStorage.setItem('navio_negreiro_events', JSON.stringify(defaultEvents));
-            return defaultEvents;
+    const API_BASE = window.location.protocol === 'http:' || window.location.protocol === 'https:'
+        ? window.location.origin
+        : 'http://localhost:3000';
+    const API_URL = `${API_BASE}/api/events`;
+
+    // Carregar eventos do servidor ou usar os locais como fallback
+    async function getEvents() {
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            return await fetchEventsFromApi();
         }
+        return getLocalEvents();
     }
 
-    // Salvar eventos no LocalStorage
-    function saveEvents(events) {
+    async function fetchEventsFromApi() {
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+            throw new Error('Falha ao carregar de API');
+        }
+        return await response.json();
+    }
+
+    function getLocalEvents() {
+        const stored = localStorage.getItem('navio_negreiro_events');
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed)) {
+                    const cleaned = cleanStoredEvents(parsed);
+                    if (cleaned.length !== parsed.length) {
+                        saveLocalEvents(cleaned);
+                    }
+                    return cleaned;
+                }
+            } catch (error) {
+                console.warn('Erro ao ler eventos do localStorage:', error);
+            }
+        }
+
+        saveLocalEvents(defaultEvents);
+        return defaultEvents;
+    }
+
+    function cleanStoredEvents(events) {
+        return events.filter(evt => evt && typeof evt === 'object' && evt.id);
+    }
+
+    function saveLocalEvents(events) {
         localStorage.setItem('navio_negreiro_events', JSON.stringify(events));
+    }
+
+    async function saveEvents(events) {
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(events)
+            });
+            if (!response.ok) {
+                throw new Error('Falha ao salvar na API');
+            }
+            return await response.json();
+        }
+        saveLocalEvents(events);
+        return events;
+    }
+
+    async function createEvent(eventData) {
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(eventData)
+            });
+            if (!response.ok) {
+                throw new Error('Falha ao criar evento');
+            }
+            return await response.json();
+        }
+
+        const events = getLocalEvents();
+        const newEvent = { ...eventData, id: `evt-${Date.now()}` };
+        events.push(newEvent);
+        saveLocalEvents(events);
+        return newEvent;
+    }
+
+    async function updateEvent(id, eventData) {
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            const response = await fetch(`${API_URL}?id=${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(eventData)
+            });
+            if (!response.ok) {
+                throw new Error('Falha ao atualizar evento');
+            }
+            return await response.json();
+        }
+
+        const events = getLocalEvents();
+        const index = events.findIndex(e => e.id === id);
+        if (index === -1) {
+            throw new Error('Evento não encontrado');
+        }
+        events[index] = { ...events[index], ...eventData, id };
+        saveLocalEvents(events);
+        return events[index];
+    }
+
+    async function deleteEvent(id) {
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            const response = await fetch(`${API_URL}?id=${id}`, {
+                method: 'DELETE'
+            });
+            if (!response.ok) {
+                throw new Error('Falha ao remover evento');
+            }
+            return true;
+        }
+
+        const events = getLocalEvents();
+        const filtered = events.filter(e => e.id !== id);
+        if (filtered.length === events.length) {
+            throw new Error('Evento não encontrado');
+        }
+        saveLocalEvents(filtered);
+        return true;
     }
 
     const currentPage = window.location.pathname;
@@ -75,39 +187,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function renderPublicEvents() {
-            const events = getEvents();
-            eventsGrid.innerHTML = '';
+            getEvents()
+                .then(events => {
+                    eventsGrid.innerHTML = '';
 
-            if (events.length === 0) {
-                eventsGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-light);">Nenhum evento programado no momento.</p>';
-                return;
-            }
+                    if (events.length === 0) {
+                        eventsGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-light);">Nenhum evento programado no momento.</p>';
+                        return;
+                    }
 
-            events.forEach(evt => {
-                const card = document.createElement('div');
-                card.className = `event-card ${evt.featured ? 'featured' : ''}`;
-                
-                const tagsHtml = evt.tags.filter(t => t.trim() !== '').map(tag => `<span class="tag">${tag.trim()}</span>`).join('');
-                
-                card.innerHTML = `
-                    <div class="event-date">
-                        <span class="day">${evt.day}</span>
-                        <span class="month">${evt.month}</span>
-                    </div>
-                    <div class="event-content">
-                        <h3>${evt.title}</h3>
-                        <p class="event-description">${evt.desc}</p>
-                        <div class="event-details">
-                            <span class="event-time"><i class="fas fa-clock"></i> ${evt.time}</span>
-                            <span class="event-location"><i class="fas fa-map-marker-alt"></i> ${evt.location}</span>
-                        </div>
-                        <div class="event-tags">
-                            ${tagsHtml}
-                        </div>
-                    </div>
-                `;
-                eventsGrid.appendChild(card);
-            });
+                    events.forEach(evt => {
+                        const card = document.createElement('div');
+                        card.className = `event-card ${evt.featured ? 'featured' : ''}`;
+
+                        const tagsHtml = evt.tags.filter(t => t.trim() !== '').map(tag => `<span class="tag">${tag.trim()}</span>`).join('');
+
+                        card.innerHTML = `
+                            <div class="event-date">
+                                <span class="day">${evt.day}</span>
+                                <span class="month">${evt.month}</span>
+                            </div>
+                            <div class="event-content">
+                                <h3>${evt.title}</h3>
+                                <p class="event-description">${evt.desc}</p>
+                                <div class="event-details">
+                                    <span class="event-time"><i class="fas fa-clock"></i> ${evt.time}</span>
+                                    <span class="event-location"><i class="fas fa-map-marker-alt"></i> ${evt.location}</span>
+                                </div>
+                                <div class="event-tags">
+                                    ${tagsHtml}
+                                </div>
+                            </div>
+                        `;
+                        eventsGrid.appendChild(card);
+                    });
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar eventos públicos:', error);
+                    eventsGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-light);">Erro ao carregar eventos.</p>';
+                });
         }
     }
 
@@ -149,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
         function showAdminPanel() {
             loginScreen.style.display = 'none';
             adminPanel.style.display = 'block';
-            renderAdminEvents();
+            renderAdminEvents().catch(error => console.error('Erro ao renderizar eventos admin:', error));
         }
 
         // Estado do formulário (adicionar ou editar)
@@ -180,9 +298,9 @@ document.addEventListener('DOMContentLoaded', () => {
             cancelBtn.style.display = 'none';
         }
 
-        addForm.addEventListener('submit', (e) => {
+        addForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const eventData = {
                 title: document.getElementById('event-title').value,
                 day: document.getElementById('event-day').value,
@@ -194,38 +312,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 featured: document.getElementById('event-featured').checked
             };
 
-            const events = getEvents();
-
-            if (editingEventId) {
-                // Editar evento existente
-                const index = events.findIndex(e => e.id === editingEventId);
-                if (index !== -1) {
-                    events[index] = { ...events[index], ...eventData };
-                    saveEvents(events);
+            try {
+                if (editingEventId) {
+                    // Editar evento existente
+                    await updateEvent(editingEventId, eventData);
                     alert('Evento atualizado com sucesso!');
+                } else {
+                    // Adicionar novo evento
+                    await createEvent(eventData);
+                    alert('Evento adicionado com sucesso!');
                 }
-            } else {
-                // Adicionar novo evento
-                const newEvent = {
-                    id: 'evt-' + Date.now(),
-                    ...eventData
-                };
-                events.push(newEvent);
-                saveEvents(events);
-                alert('Evento adicionado com sucesso!');
+
+                resetForm();
+                await renderAdminEvents();
+            } catch (error) {
+                console.error('Erro ao salvar evento:', error);
+                alert('Erro ao salvar evento. Tente novamente.');
             }
-            
-            resetForm();
-            renderAdminEvents();
         });
 
         // Renderizar lista de administração
-        function renderAdminEvents() {
+        async function renderAdminEvents() {
             const listContainer = document.getElementById('admin-events-list');
-            const events = getEvents();
-            listContainer.innerHTML = '';
+            listContainer.innerHTML = ''; // Limpar lista anterior
+            let events = [];
 
-            if (events.length === 0) {
+            try {
+                events = await getEvents();
+            } catch (error) {
+                console.error('Erro ao carregar eventos do servidor:', error);
+                listContainer.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-light);">Não foi possível carregar os eventos. Verifique a conexão com o servidor.</div>';
+                return;
+            }
+
+            if (!events || events.length === 0) {
                 listContainer.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-light);">Nenhum evento encontrado.</div>';
                 return;
             }
@@ -233,7 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
             events.forEach(evt => {
                 const item = document.createElement('div');
                 item.className = 'event-list-item';
-                
+
                 // Tratar html no dia
                 const displayDay = evt.day.replace(/<br>/g, ' ');
 
@@ -296,10 +416,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function removeEvent(id) {
-            let events = getEvents();
-            events = events.filter(e => e.id !== id);
-            saveEvents(events);
-            renderAdminEvents();
+            deleteEvent(id)
+                .then(() => {
+                    renderAdminEvents().catch(error => console.error('Erro ao renderizar eventos após remoção:', error));
+                })
+                .catch(error => {
+                    console.error('Erro ao remover evento:', error);
+                    alert('Erro ao remover evento. Tente novamente.');
+                });
         }
     }
 });
