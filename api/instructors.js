@@ -1,4 +1,6 @@
-const { kv } = require('@vercel/kv');
+// const { kv } = require('@vercel/kv');
+
+let instructorsData = null;
 
 const defaultInstructors = [
   {
@@ -46,16 +48,14 @@ const defaultInstructors = [
 ];
 
 async function readInstructors() {
-  let instructors = await kv.get('instructors');
-  if (!instructors) {
-    instructors = defaultInstructors;
-    await kv.set('instructors', instructors);
+  if (!instructorsData) {
+    instructorsData = defaultInstructors;
   }
-  return instructors;
+  return instructorsData;
 }
 
 async function writeInstructors(instructors) {
-  await kv.set('instructors', instructors);
+  instructorsData = instructors;
 }
 
 export default async function handler(req, res) {
