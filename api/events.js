@@ -1,4 +1,5 @@
-const { kv } = require('@vercel/kv');
+const Redis = require('ioredis');
+const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 
 const defaultEvents = [
   {
@@ -48,16 +49,17 @@ const defaultEvents = [
 ];
 
 async function readEvents() {
-  let events = await kv.get('events');
+  let eventsStr = await redis.get('events');
+  let events = eventsStr ? JSON.parse(eventsStr) : null;
   if (!events) {
     events = defaultEvents;
-    await kv.set('events', events);
+    await redis.set('events', JSON.stringify(events));
   }
   return events;
 }
 
 async function writeEvents(events) {
-  await kv.set('events', events);
+  await redis.set('events', JSON.stringify(events));
 }
 
 async function handler(req, res) {

@@ -1,4 +1,5 @@
-const { kv } = require('@vercel/kv');
+const Redis = require('ioredis');
+const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 
 const defaultInstructors = [
   {
@@ -46,16 +47,17 @@ const defaultInstructors = [
 ];
 
 async function readInstructors() {
-  let instructors = await kv.get('instructors');
+  let instructorsStr = await redis.get('instructors');
+  let instructors = instructorsStr ? JSON.parse(instructorsStr) : null;
   if (!instructors) {
     instructors = defaultInstructors;
-    await kv.set('instructors', instructors);
+    await redis.set('instructors', JSON.stringify(instructors));
   }
   return instructors;
 }
 
 async function writeInstructors(instructors) {
-  await kv.set('instructors', instructors);
+  await redis.set('instructors', JSON.stringify(instructors));
 }
 
 async function handler(req, res) {
