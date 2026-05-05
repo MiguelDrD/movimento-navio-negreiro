@@ -425,26 +425,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     isMainInstructor: false
                 };
 
-                try {
-                    if (editingInstructorId) {
-                        await updateInstructor(editingInstructorId, instructorData);
-                        alert('Instrutor atualizado com sucesso!');
-                    } else {
-                        await createInstructor(instructorData);
-                        alert('Instrutor adicionado com sucesso!');
-                    }
-                } catch (error) {
-                    console.error(error);
-                    alert('Ocorreu um erro ao salvar o instrutor. Tente novamente. Detalhe: ' + error.message);
-                } finally {
-                    saveButton.innerHTML = saveButtonOriginalHtml;
-                    saveButton.disabled = false;
+                if (editingInstructorId) {
+                    await updateInstructor(editingInstructorId, instructorData);
+                    alert('Instrutor atualizado com sucesso!');
+                } else {
+                    await createInstructor(instructorData);
+                    alert('Instrutor adicionado com sucesso!');
                 }
 
                 // Resetar formulário APÓS tudo ser processado
                 resetForm();
                 await renderAdminInstructors();
-            });
+
+            } catch (error) {
+                console.error(error);
+                alert('Ocorreu um erro ao salvar o instrutor. Tente novamente. Detalhe: ' + error.message);
+            } finally {
+                saveButton.innerHTML = saveButtonOriginalHtml;
+                saveButton.disabled = false;
+            }
+        });
         }
 
         // Renderizar lista de administração
