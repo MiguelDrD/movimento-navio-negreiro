@@ -197,8 +197,12 @@
 
                     <!-- Imagem -->
                     <div class="form-group">
-                        <label for="instructor-image">URL da Imagem *</label>
-                        <input type="text" id="instructor-image" placeholder="Ex: https://example.com/foto.jpg ou ../img/foto.jpg" required>
+                        <label for="instructor-image-file">Foto do Instrutor *</label>
+                        <input type="file" id="instructor-image-file" accept="image/*" required>
+                        <input type="hidden" id="instructor-image-url">
+                        <div style="margin-top: 10px;">
+                            <img id="instructor-image-preview" src="" alt="Pré-visualização" style="display: none; max-width: 150px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        </div>
                     </div>
 
                     <!-- Redes Sociais -->

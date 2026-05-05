@@ -293,6 +293,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const formTitle = document.querySelector('.admin-form h3');
         const saveButton = document.getElementById('save-instructor-btn');
         const submitBtn = addForm.querySelector('button[type="submit"]') || saveButton;
+        const fileInput = document.getElementById('instructor-image-file');
+        const filePreview = document.getElementById('instructor-image-preview');
+        const fileUrlHidden = document.getElementById('instructor-image-url');
+        
+        let currentBase64Image = null;
+
+        // Mostrar preview da imagem ao selecionar arquivo
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    currentBase64Image = e.target.result;
+                    filePreview.src = currentBase64Image;
+                    filePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
         const cancelBtn = document.createElement('button');
         cancelBtn.type = 'button';
         cancelBtn.className = 'btn btn-secondary';
@@ -314,44 +333,68 @@ document.addEventListener('DOMContentLoaded', () => {
             formTitle.textContent = 'Adicionar Novo Instrutor';
             submitBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Instrutor';
             cancelBtn.style.display = 'none';
+            currentBase64Image = null;
+            filePreview.src = '';
+            filePreview.style.display = 'none';
+            fileUrlHidden.value = '';
+            fileInput.required = true;
         }
 
         // Usar event listener de click no botão em vez de submit no formulário
         if (saveButton) {
             saveButton.addEventListener('click', async () => {
-                // Extrair valores ANTES de qualquer operação
-                const nameValue = document.getElementById('instructor-name').value.trim();
-                const titleValue = document.getElementById('instructor-title').value.trim();
-                const roleValue = document.getElementById('instructor-role').value.trim();
-                const imageValueRaw = document.getElementById('instructor-image').value.trim();
-                const instagramRaw = document.getElementById('instructor-instagram').value.trim();
-                const facebookRaw = document.getElementById('instructor-facebook').value.trim();
-                const descriptionValue = document.getElementById('instructor-description').value.trim();
-                const specialtiesValue = document.getElementById('instructor-specialties').value.split(',').map(s => s.trim()).filter(s => s !== '');
-                
-                const imageValue = normalizeUrl(imageValueRaw);
-                const instagramValue = instagramRaw ? normalizeUrl(instagramRaw) : '#';
-                const facebookValue = facebookRaw ? normalizeUrl(facebookRaw) : '#';
-                
-                if (!nameValue || !titleValue || !roleValue || !imageValue || !descriptionValue) {
-                    alert('Preencha todos os campos obrigatórios antes de salvar o instrutor.');
-                    return;
-                }
+                const saveButtonOriginalHtml = saveButton.innerHTML;
+                saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+                saveButton.disabled = true;
 
-                if (!isValidUrl(imageValue)) {
-                    alert('A URL da imagem não é válida. Use um caminho relativo ou um endereço completo começando com http:// ou https://.');
-                    return;
-                }
+                try {
+                    // Extrair valores ANTES de qualquer operação
+                    const nameValue = document.getElementById('instructor-name').value.trim();
+                    const titleValue = document.getElementById('instructor-title').value.trim();
+                    const roleValue = document.getElementById('instructor-role').value.trim();
+                    const instagramRaw = document.getElementById('instructor-instagram').value.trim();
+                    const facebookRaw = document.getElementById('instructor-facebook').value.trim();
+                    const descriptionValue = document.getElementById('instructor-description').value.trim();
+                    const specialtiesValue = document.getElementById('instructor-specialties').value.split(',').map(s => s.trim()).filter(s => s !== '');
+                    
+                    let imageValue = fileUrlHidden.value; // Pode ser a URL existente (se estiver editando e não mudou a foto)
 
-                if (instagramRaw && !isValidUrl(instagramValue)) {
-                    alert('A URL do Instagram não é válida. Use um endereço completo começando com http:// ou https://.');
-                    return;
-                }
+                    // Se escolheu um novo arquivo, fazemos o upload dele primeiro
+                    if (currentBase64Image && fileInput.files[0]) {
+                        const file = fileInput.files[0];
+                        const response = await fetch(`${API_BASE}/api/upload`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                file: currentBase64Image,
+                                filename: file.name
+                            })
+                        });
 
-                if (facebookRaw && !isValidUrl(facebookValue)) {
-                    alert('A URL do Facebook não é válida. Use um endereço completo começando com http:// ou https://.');
-                    return;
-                }
+                        if (!response.ok) {
+                            throw new Error('Falha no upload da imagem.');
+                        }
+                        const data = await response.json();
+                        imageValue = data.url;
+                    }
+
+                    const instagramValue = instagramRaw ? normalizeUrl(instagramRaw) : '#';
+                    const facebookValue = facebookRaw ? normalizeUrl(facebookRaw) : '#';
+                    
+                    if (!nameValue || !titleValue || !roleValue || !imageValue || !descriptionValue) {
+                        alert('Preencha todos os campos obrigatórios e envie uma foto antes de salvar o instrutor.');
+                        return;
+                    }
+
+                    if (instagramRaw && !isValidUrl(instagramValue)) {
+                        alert('A URL do Instagram não é válida. Use um endereço completo começando com http:// ou https://.');
+                        return;
+                    }
+
+                    if (facebookRaw && !isValidUrl(facebookValue)) {
+                        alert('A URL do Facebook não é válida. Use um endereço completo começando com http:// ou https://.');
+                        return;
+                    }
 
                 const cordSelect = document.getElementById('instructor-cord');
                 const cordValue = cordSelect.value;
@@ -392,7 +435,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } catch (error) {
                     console.error(error);
-                    alert('Ocorreu um erro ao salvar o instrutor. Tente novamente.');
+                    alert('Ocorreu um erro ao salvar o instrutor. Tente novamente. Detalhe: ' + error.message);
+                } finally {
+                    saveButton.innerHTML = saveButtonOriginalHtml;
+                    saveButton.disabled = false;
                 }
 
                 // Resetar formulário APÓS tudo ser processado
@@ -497,7 +543,17 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('instructor-role').value = instructor.role;
             document.getElementById('instructor-cord').value = `${instructor.cordStyle}|${instructor.cordName}`;
             document.getElementById('instructor-cord-color-name').value = instructor.cordName;
-            document.getElementById('instructor-image').value = instructor.image;
+            
+            // Lógica para preencher o file preview e hidden url no lugar de input text
+            fileUrlHidden.value = instructor.image;
+            fileInput.required = false; // Como já tem foto, o upload de nova foto é opcional
+            if (instructor.image) {
+                filePreview.src = instructor.image;
+                filePreview.style.display = 'block';
+            } else {
+                filePreview.style.display = 'none';
+            }
+            
             document.getElementById('instructor-instagram').value = instructor.instagram !== '#' ? instructor.instagram : '';
             document.getElementById('instructor-facebook').value = instructor.facebook !== '#' ? instructor.facebook : '';
             document.getElementById('instructor-description').value = instructor.description;
