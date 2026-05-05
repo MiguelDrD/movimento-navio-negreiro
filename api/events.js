@@ -114,7 +114,7 @@ async function handler(req, res) {
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Erro interno do servidor.' });
+    res.status(500).json({ error: 'Erro interno do servidor.', details: error.message, stack: error.stack });
   }
 }
 
